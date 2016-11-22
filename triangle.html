@@ -8,6 +8,34 @@
 	</head>
 	<body>
 		<script src="libraries/three.min.js"></script>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
+		<script type="x-shader/x-vertex" id="vertexshader">
+
+	// switch on high precision floats
+	#ifdef GL_ES
+	precision highp float;
+	#endif
+
+	void main()
+	{
+		gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+	}
+
+</script>
+
+<script type="x-shader/x-fragment" id="fragmentshader">
+
+	#ifdef GL_ES
+	precision highp float;
+	#endif
+
+	void main()
+	{
+		gl_FragColor 	= vec4(1.0,0.0,1.0,1.0);
+	}
+
+</script>
+
 		<script>
 			var scene = new THREE.Scene();
 			var camera = new THREE.PerspectiveCamera( 120, window.innerWidth/window.innerHeight, 1, 1000 );
@@ -18,7 +46,7 @@
 			document.body.appendChild( renderer.domElement );
 			var cubeArray = [];
 			var geometry = new THREE.BoxGeometry( 1, 1, 1 );
-			var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+			var material = new THREE.ShaderMaterial( { vertexShader: $('#vertexshader').text(), fragmentShader: $('#fragmentshader').text() } );
 			var cube = new THREE.Mesh( geometry, material );
       cube.position.x = 0;
 			cube.position.y = 13;
