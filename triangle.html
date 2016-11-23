@@ -113,9 +113,11 @@
 			var indexesToRemove = [];
 			for (let obj of objArray) {
 				obj.material.uniforms.time.value += 1;
+				var time = obj.material.uniforms.time.value;
 				if(obj.scale.x <= 13) {
-					obj.position.y -= 0.1;
-					obj.position.z += 0.05;
+					//obj.position.y -= 0.1;
+					obj.position.y = 0.5 * -.01 * time * time + 0.5 * time + 10
+					obj.position.z = -10 + 0.05 * time;
 					obj.rotation.y -= 0.1;
 					if (obj.position.y < -10 + 3) {
 						indexesToRemove.push(objArray.indexOf(obj));
