@@ -1,90 +1,143 @@
 <html>
-	<head>
-		<title>My first Three.js app</title>
-		<style>
-			body { margin: 0; }
-			canvas { width: 100%; height: 100% }
-		</style>
-	</head>
-	<body>
-		<script src="libraries/three.min.js"></script>
-		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
-		<script type="x-shader/x-vertex" id="vertexshader">
+  <head>
+    <title>My first Three.js app</title>
+    <style>
+      body { margin: 0; }
+      canvas { width: 100%; height: 100% }
+    </style>
+  </head>
+  <body>
+    <script src="libraries/three.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
+    <script type="x-shader/x-vertex" id="vertexshader">
+      // switch on high precision floats
+      #ifdef GL_ES
+      precision highp float;
+      #endif
+			varying vec3 vNormal;
+			uniform float time;
+      void main() {
+				vNormal = normal;
+				vec3 new_pos = position;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(new_pos, 1.0);
+      }
+    </script>
 
-	// switch on high precision floats
-	#ifdef GL_ES
-	precision highp float;
-	#endif
+    <script type="x-shader/x-fragment" id="fragmentshader">
+      #ifdef GL_ES
+      precision highp float;
+      #endif
+			varying vec3 vNormal;
 
-	void main()
-	{
-		gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
-	}
+      void main() {
+        gl_FragColor = dot(vNormal, vec3(1.0, 1.0, 1.0)) * vec4(1.0,0.0,1.0,1.0);
+      }
+    </script>
 
-</script>
+    <script>
+		'use strict';
+    // start setup
 
-<script type="x-shader/x-fragment" id="fragmentshader">
+		window.requestAnimFrame = (function(){
+	      return  window.requestAnimationFrame       ||
+	              window.webkitRequestAnimationFrame ||
+	              window.mozRequestAnimationFrame    ||
+	              window.oRequestAnimationFrame      ||
+	              window.msRequestAnimationFrame     ||
+	              function(/* function */ callback, /* DOMElement */ element){
+	                window.setTimeout(callback, 1000 / 60);
+	              };
+	  	})();
 
-	#ifdef GL_ES
-	precision highp float;
-	#endif
+    var scene = new THREE.Scene();
+    var camera = new THREE.PerspectiveCamera(120, window.innerWidth/window.innerHeight, 1, 1000);
+    var clock = new THREE.Clock();
+    var renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0xffffff, 1);
+    document.body.appendChild(renderer.domElement);
+		var objArray = [];
+    // end setup
 
-	void main()
-	{
-		gl_FragColor 	= vec4(1.0,0.0,1.0,1.0);
-	}
+		// sphere
+		function createSphere(x, y, z) {
+			const RADIUS = 3;
+			const SEGMENTS = 16;
+			const RINGS = 16;
 
-</script>
-
-		<script>
-			var scene = new THREE.Scene();
-			var camera = new THREE.PerspectiveCamera( 120, window.innerWidth/window.innerHeight, 1, 1000 );
-			var clock = new THREE.Clock();
-			var renderer = new THREE.WebGLRenderer();
-			renderer.setSize( window.innerWidth, window.innerHeight );
-      renderer.setClearColor( 0xffffff, 1);
-			document.body.appendChild( renderer.domElement );
-			var cubeArray = [];
-			var geometry = new THREE.BoxGeometry( 1, 1, 1 );
-			var material = new THREE.ShaderMaterial( { vertexShader: $('#vertexshader').text(), fragmentShader: $('#fragmentshader').text() } );
-			var cube = new THREE.Mesh( geometry, material );
-      cube.position.x = 0;
-			cube.position.y = 13;
-			cubeArray.push(cube);
-			scene.add( cube );
-      var geometry = new THREE.PlaneGeometry( 50,1, 32 );
-      var material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} );
-      var plane = new THREE.Mesh( geometry, material );
-      plane.position.y = -10;
-      plane.position.z = 1.7;
-      plane.rotation.x = 11;
-      scene.add( plane );
-			camera.position.z = 10;
-			var i = 1;
-			var render = function () {
-				requestAnimationFrame( render );
-        cubeUpdate();
-				cubeGenerator();
-				renderer.render(scene, camera);
-			};
-			var cubeUpdate = function () {
-				cube.position.y -= 0.01;
-				cube.rotation.y += 0.01;
-				if(cube.scale.x <= 13) {
-					cube.scale.set( 1*i, 1*i, 1*i );
+			const sphereUniforms = {
+				// stores how much time has passed since creation
+				time: {
+					type: 'f',
+					value: 0
 				}
-				i+= 0.005;
 			}
-			var cubeGenerator = function () {
-				if (Math.random() > 0.9 & parseInt(clock.getElapsedTime()) % 3 == 0) {
-						var newCube = cube.clone();
-						newCube.position.set(Math.random()*50 - 25,10,0);
-						newCube.scale.set(1,1,1);
-						scene.add(newCube);
+			const material = new THREE.ShaderMaterial({
+				uniforms: sphereUniforms,
+				vertexShader: $('#vertexshader').text(),
+				fragmentShader: $('#fragmentshader').text()
+			});
+			const sphereGeometry = new THREE.SphereGeometry(RADIUS, SEGMENTS, RINGS);
+			const sphere = new THREE.Mesh(sphereGeometry, material);
+			sphere.position.x = x;
+			sphere.position.y = y;
+			sphere.position.z = z;
+
+			return sphere;
+		}
+
+		// plane
+		var geometry = new THREE.PlaneGeometry(50, 20, 32);
+		var material = new THREE.MeshBasicMaterial({
+			color: 0xffff00,
+			side: THREE.DoubleSide
+		});
+    var plane = new THREE.Mesh(geometry, material);
+    plane.position.y = -10;
+    plane.position.z = 1.7;
+    plane.rotation.x = 11;
+    scene.add(plane);
+
+		// camera
+    camera.position.z = 10;
+
+		// loop
+    var i = 1;
+    function render() {
+      objUpdate();
+      sphereGenerator();
+      renderer.render(scene, camera);
+			requestAnimFrame(render);
+    };
+    var objUpdate = function () {
+			var indexesToRemove = [];
+			for (let obj of objArray) {
+				obj.material.uniforms.time.value += 1;
+				if(obj.scale.x <= 13) {
+					obj.position.y -= 0.1;
+					obj.position.z += 0.05;
+					obj.rotation.y -= 0.1;
+					if (obj.position.y < -10 + 3) {
+						indexesToRemove.push(objArray.indexOf(obj));
+					}
 				}
-				//console.log(clock.getDelta());
 			}
-			render();
-		</script>
-	</body>
+			for (let index of indexesToRemove) {
+				scene.remove(objArray[index]);
+				objArray.splice(index, 1);
+			}
+      i+= 0.005;
+    }
+		var time = 0;
+    var sphereGenerator = function () {
+			++time;
+      if (time % 500 === 1) {
+        var newSphere = createSphere(0, 10, -10);
+        scene.add(newSphere);
+				objArray.push(newSphere);
+      }
+    }
+		requestAnimFrame(render);
+    </script>
+  </body>
 </html>
