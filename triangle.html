@@ -14,11 +14,14 @@
       #ifdef GL_ES
       precision highp float;
       #endif
+
 			varying vec3 vNormal;
 			uniform float time;
       void main() {
+				float scale = 0.5 + exp(-1.0 * (time - 1.0) * (time - 1.0) / (2.0 * 0.0001));
 				vNormal = normal;
 				vec3 new_pos = position;
+				new_pos.x = scale * new_pos.x;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(new_pos, 1.0);
       }
     </script>
@@ -49,11 +52,26 @@
 	              };
 	  	})();
 
+	// Set the scene size.
+		const WIDTH = window.innerWidth;
+		const HEIGHT = window.innerHeight;
+
+		// Set some camera attributes.
+		const VIEW_ANGLE = 120;
+		const ASPECT = WIDTH / HEIGHT;
+		const NEAR = 0.1;
+		const FAR = 10000;
+
     var scene = new THREE.Scene();
-    var camera = new THREE.PerspectiveCamera(120, window.innerWidth/window.innerHeight, 1, 1000);
+    var camera = new THREE.PerspectiveCamera(
+        VIEW_ANGLE,
+        ASPECT,
+        NEAR,
+        FAR
+    );
     var clock = new THREE.Clock();
     var renderer = new THREE.WebGLRenderer();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+		renderer.setSize(WIDTH, HEIGHT);
     renderer.setClearColor(0xffffff, 1);
     document.body.appendChild(renderer.domElement);
 		var objArray = [];
@@ -62,8 +80,8 @@
 		// sphere
 		function createSphere(x, y, z) {
 			const RADIUS = 3;
-			const SEGMENTS = 16;
-			const RINGS = 16;
+			const SEGMENTS = 36;
+			const RINGS = 36;
 
 			const sphereUniforms = {
 				// stores how much time has passed since creation
@@ -99,7 +117,14 @@
     scene.add(plane);
 
 		// camera
-    camera.position.z = 10;
+		const cameraOrigin = {
+			x: 0,
+			y: 0,
+			z: 10
+		};
+    camera.position.x = cameraOrigin.x;
+		camera.position.y = cameraOrigin.y;
+		camera.position.z = cameraOrigin.z;
 
 		// loop
     var i = 1;
@@ -114,14 +139,19 @@
 			for (let obj of objArray) {
 				obj.material.uniforms.time.value += 1;
 				var time = obj.material.uniforms.time.value;
-				if(obj.scale.x <= 13) {
-					//obj.position.y -= 0.1;
-					obj.position.y = 0.5 * -.01 * time * time + 0.5 * time + 10
-					obj.position.z = -10 + 0.05 * time;
-					obj.rotation.y -= 0.1;
-					if (obj.position.y < -10 + 3) {
-						indexesToRemove.push(objArray.indexOf(obj));
-					}
+				//obj.position.y -= 0.1;
+				obj.position.y = 0.5 * -.01 * time * time + 0.5 * time + 10
+				// calculate rotation
+				var angle =
+					Math.atan((obj.position.x - cameraOrigin.x) / (obj.position.z - cameraOrigin.z));
+				console.log("width: " + (obj.position.x - cameraOrigin.x) + " height: " + (obj.position.z - cameraOrigin.z));
+				obj.rotation.y = angle;
+				obj.position.z += 0.15 * Math.cos(angle);
+				obj.position.x += 0.15 * Math.sin(angle);
+				//obj.position.z = -10 + 0.05 * time;
+				//obj.rotation.y += 0.1;
+				if (obj.position.y < -10 + 3) {
+					indexesToRemove.push(objArray.indexOf(obj));
 				}
 			}
 			for (let index of indexesToRemove) {
@@ -134,7 +164,13 @@
     var sphereGenerator = function () {
 			++time;
       if (time % 500 === 1) {
-        var newSphere = createSphere(0, 10, -10);
+				var sphereOrigin = {
+					x: -25,
+					y: 10,
+					z: -10
+				}
+        var newSphere = createSphere(sphereOrigin.x, sphereOrigin.y, sphereOrigin.z);
+				newSphere.origin = sphereOrigin;
         scene.add(newSphere);
 				objArray.push(newSphere);
       }
