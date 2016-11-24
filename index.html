@@ -19,7 +19,6 @@
 			uniform float time;
       void main() {
         vNormal = normal;
-        vVector = modelViewMatrix * vec4(position,1.0);
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
       }
     </script>
@@ -29,26 +28,13 @@
     precision highp float;
     #endif
     varying vec3 vNormal;
-    varying vec4 vVector;
     uniform vec3 lightPos;
     void main() {
       //vec3 light = lightPos;
-      vec4 vecL = normalize(vec4(lightPos,1.0) - vVector);
-      vec4 vecE = normalize(-vVector);
-      vec4 vecR = normalize(-reflect(vecL,vec4(vNormal,1.0)));
-
-      // ambient Term
-      vec4 Iamb = vec4(0.1,0.0,0.0,1.0);
-      //Diffuse Term
-      vec4 IDiff = vec4(0.5,0.0,0.0,1.0) * max(dot(vec4(vNormal,1.0),vecL),0.0);
-      IDiff = clamp(IDiff,0.0,1.0);
-      //Specular Term
-      vec4 Ispec = vec4(1.0,1.0,1.0,1.0)
-                * pow(max(dot(vecR,vecE),0.0),16.0);
-      Ispec = clamp(Ispec,0.0,1.0);
-      //light = normalize(light);
-      //float dProd = max(0.0, dot(vNormal, light));
-      gl_FragColor = vec4(0.0,0.0,0.0,1.0) + Iamb + IDiff + Ispec;
+      vec3 light = lightPos;
+      light = normalize(light);
+      float dProd = max(0.0, dot(vNormal, light));
+      gl_FragColor = vec4(0.0,0.0,dProd,1.0);
     }
     </script>
 
@@ -84,6 +70,7 @@
         NEAR,
         FAR
     );
+    camera.position.z = 100;
     const INIT_LIGHT_X = 0;
     const INIT_LIGHT_Y = 3;
     const INIT_LIGHT_Z = 2;
@@ -141,12 +128,21 @@
     plane.position.z = PLANE_Z;
     plane.rotation.x = PLANE_X;
     scene.add(plane);
-
+    var sunGeometry = new THREE.SphereGeometry(20, 16, 16);
+    var sunmaterial = new THREE.MeshBasicMaterial({
+      color: 0xffff00
+    })
+    var sun = new THREE.Mesh(sunGeometry, sunmaterial );
+    sun.position.x = LightVec.x;
+    sun.position.y = 210;
+    sun.position.z = -500;
+    scene.add(sun);
     // loop
     var i = 1;
     function render() {
       objUpdate();
       sphereGenerator();
+      sunUpdate();
       renderer.render(scene, camera);
 			requestAnimFrame(render);
     };
@@ -159,7 +155,7 @@
     function objUpdate() {
       ++lightTime;
 			var indexesToRemove = [];
-      LightVec.x = 4 * Math.sin(2 * Math.PI * lightTime / 2000) ;
+      LightVec.x = 4 * Math.sin(2 * Math.PI * lightTime / 500) ;
 			for (let obj of objArray) {
 				obj.material.uniforms.time.value += 1;
         obj.material.uniforms.lightPos.value = LightVec;
@@ -186,7 +182,7 @@
 		var time = 0;
     var sphereGenerator = function () {
 			++time;
-      if (time % 100 === 1) {
+      if (time % 10 === 1) {
 				var sphereOrigin = {
 					x: Math.random() * 700 - 350,
 					y: 0,
@@ -197,6 +193,9 @@
         scene.add(newSphere);
 				objArray.push(newSphere);
       }
+    }
+    var sunUpdate = function() {
+      sun.position.x = LightVec.x*50;
     }
 		requestAnimFrame(render);
     </script>
