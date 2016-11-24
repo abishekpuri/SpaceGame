@@ -38,20 +38,20 @@
     uniform vec3 lightPos;
     uniform sampler2D texture;
     varying vec2 vUv;
-
+    uniform vec4 specularity;
     void main() {
       //vec3 light = lightPos;
       vec3 lightDir = normalize(lightPos);
 
       vec4 eyeVecNormal = normalize(vVector);
 
-      vec3 reflectVec = normalize(-reflect(lightDir, vNormal));
+      vec3 reflectVec = normalize(reflect(-lightDir, vNormal));
 
-      vec4 ambient = vec4(0.5,0.0,0.0,1.0);
+      vec4 ambient = vec4(0.4,0.0,0.0,1.0);
 
-      vec4 diffuse = vec4(0.2,0.2,0.2,1.0) * max(dot(vNormal,lightDir),0.0);
+      vec4 diffuse = vec4(0.4,0.2,0.2,1.0) * max(dot(vNormal,lightDir),0.0);
 
-      vec4 specular = vec4(0.2,0.2,0.2,1.0) * pow(max(dot(vec4(reflectVec,1.0), eyeVecNormal), 0.0), 16.0);
+      vec4 specular = specularity * pow(max(dot(vec4(reflectVec,1.0), eyeVecNormal), 0.0), 16.0);
 
       gl_FragColor = texture2D(texture, vUv) + ambient + diffuse + specular;
  /*
@@ -109,7 +109,7 @@
     // end setup
 
     // sphere
-    const RADIUS = 10;
+    const RADIUS = 15;
     const SEGMENTS = 50;
     const RINGS = 50;
 		function createSphere(x, y, z) {
@@ -129,6 +129,10 @@
         lightPos: {
           type: 'v3',
           value: LightVec
+        },
+        specularity: {
+          tyle: 'v4',
+          value: new THREE.Vector4(Math.random()*0.5,0.2,0.2,1.0)
         },
         texture: {
           type: 't',
@@ -184,9 +188,9 @@
     };
 
     const GRAVITY = -0.044;
-    const VY0 = 2.5;
-    const Y0 = 10;
-    const VX0 = 4;
+    const VY0 = 2.2;
+    const Y0 = 18;
+    const VX0 = 5.4;
     var lightTime = 0;
     function objUpdate() {
       ++lightTime;
