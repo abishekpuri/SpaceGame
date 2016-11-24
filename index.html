@@ -159,7 +159,7 @@
     function objUpdate() {
       ++lightTime;
 			var indexesToRemove = [];
-      LightVec.x = 4 * Math.sin(2 * Math.PI * lightTime / 20) ;
+      LightVec.x = 4 * Math.sin(2 * Math.PI * lightTime / 2000) ;
 			for (let obj of objArray) {
 				obj.material.uniforms.time.value += 1;
         obj.material.uniforms.lightPos.value = LightVec;
