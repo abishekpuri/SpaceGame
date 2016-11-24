@@ -22,7 +22,7 @@
 
       void main() {
         vNormal = normal;
-
+        //vVector = vec3(position);
         vUv = uv;
         vVector = modelViewMatrix * vec4(position,1.0);
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
@@ -33,6 +33,7 @@
     #ifdef GL_ES
     precision highp float;
     #endif
+    varying vec4 vVector;
     varying vec3 vNormal;
     uniform vec3 lightPos;
     uniform sampler2D texture;
@@ -40,11 +41,25 @@
 
     void main() {
       //vec3 light = lightPos;
+      vec3 lightDir = normalize(lightPos);
+
+      vec4 eyeVecNormal = normalize(vVector);
+
+      vec3 reflectVec = normalize(-reflect(lightDir, vNormal));
+
+      vec4 ambient = vec4(0.5,0.0,0.0,1.0);
+
+      vec4 diffuse = vec4(0.2,0.2,0.2,1.0) * max(dot(vNormal,lightDir),0.0);
+
+      vec4 specular = vec4(0.2,0.2,0.2,1.0) * pow(max(dot(vec4(reflectVec,1.0), eyeVecNormal), 0.0), 16.0);
+
+      gl_FragColor = texture2D(texture, vUv) + ambient + diffuse + specular;
+ /*
       vec3 light = lightPos;
       light = normalize(light);
       float dProd = max(0.0, dot(vNormal, light));
 //      gl_FragColor = vec4(0.0,0.0,dProd,1.0);
-      gl_FragColor = texture2D(texture, vUv)+vec4(0.3,0.3,0.3,1.0)+vec4(0,0,dProd/1.5,1.0);
+      gl_FragColor = texture2D(texture, vUv)+vec4(0.0,0.0,0.0,1.0)+vec4(dProd/1.5,0.0,0.0,1.0);*/
 
     }
     </script>
@@ -157,7 +172,7 @@
     sun.position.x = LightVec.x;
     sun.position.y = 250;
     sun.position.z = -600;
-    scene.add(sun);
+    //scene.add(sun);
     // loop
     var i = 1;
     function render() {
