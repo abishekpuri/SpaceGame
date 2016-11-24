@@ -119,15 +119,15 @@
     const PLANE_Y = -100;
     const PLANE_Z = -FAR / 2;
 		var geometry = new THREE.PlaneGeometry(FAR, FAR, 32);
-		var material = new THREE.MeshBasicMaterial({
-			color: 0xffff00,
-			side: THREE.DoubleSide
-		});
+		var material = new THREE.MeshLambertMaterial({
+  color: 0xFF0000
+});
     var plane = new THREE.Mesh(geometry, material);
     plane.position.y = PLANE_Y;
     plane.position.z = PLANE_Z;
     plane.rotation.x = PLANE_X;
     scene.add(plane);
+    // Sun
     var sunGeometry = new THREE.SphereGeometry(20, 16, 16);
     var sunmaterial = new THREE.MeshBasicMaterial({
       color: 0xffff00
