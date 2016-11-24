@@ -8,6 +8,7 @@
   </head>
   <body>
     <script src="libraries/three.min.js"></script>
+    <script src="libraries/threex.dynamictexture.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
     <script type="x-shader/x-vertex" id="vertexshader">
       // switch on high precision floats
@@ -17,8 +18,13 @@
       varying vec4 vVector;
 			varying vec3 vNormal;
 			uniform float time;
+      varying vec2 vUv;
+
       void main() {
         vNormal = normal;
+
+        vUv = uv;
+        vVector = modelViewMatrix * vec4(position,1.0);
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
       }
     </script>
@@ -29,12 +35,17 @@
     #endif
     varying vec3 vNormal;
     uniform vec3 lightPos;
+    uniform sampler2D texture;
+    varying vec2 vUv;
+
     void main() {
       //vec3 light = lightPos;
       vec3 light = lightPos;
       light = normalize(light);
       float dProd = max(0.0, dot(vNormal, light));
-      gl_FragColor = vec4(0.0,0.0,dProd,1.0);
+//      gl_FragColor = vec4(0.0,0.0,dProd,1.0);
+
+      gl_FragColor = texture2D(texture, vUv);
     }
     </script>
 
@@ -88,7 +99,12 @@
     const RINGS = 16;
 		function createSphere(x, y, z) {
       // Set up the sphere vars
-
+      const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      var char = charset.charAt(Math.floor(Math.random() * charset.length));
+      var dynamicTexture	= new THREEx.DynamicTexture(512,512);
+      dynamicTexture.context.font	= "bolder 90px Verdana";
+      dynamicTexture.texture.anisotropy = renderer.getMaxAnisotropy();
+      dynamicTexture.drawText(char, 100, 256, 'white');
       const sphereUniforms = {
 				// stores how much time has passed since creation
 				time: {
@@ -98,6 +114,10 @@
         lightPos: {
           type: 'v3',
           value: LightVec
+        },
+        texture: {
+          type: 't',
+          value: dynamicTexture.texture
         }
 			}
 			const material = new THREE.ShaderMaterial({
@@ -184,7 +204,7 @@
 			++time;
       if (time % 10 === 1) {
 				var sphereOrigin = {
-					x: Math.random() * 700 - 350,
+					x: Math.random() * 600 - 300,
 					y: 0,
 					z: -500
 				}
