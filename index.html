@@ -42,17 +42,11 @@
     void main() {
       //vec3 light = lightPos;
       vec3 lightDir = normalize(lightPos);
-
       vec4 eyeVecNormal = normalize(vVector);
-
       vec3 reflectVec = normalize(reflect(-lightDir, vNormal));
-
       vec4 ambient = vec4(0.4,0.0,0.0,1.0);
-
       vec4 diffuse = vec4(0.4,0.2,0.2,1.0) * max(dot(vNormal,lightDir),0.0);
-
       vec4 specular = specularity * pow(max(dot(vec4(reflectVec,1.0), eyeVecNormal), 0.0), 16.0);
-
       gl_FragColor = texture2D(texture, vUv) + ambient + diffuse + specular;
  /*
       vec3 light = lightPos;
@@ -91,26 +85,26 @@
 
     var scene = new THREE.Scene();
     var camera = new THREE.PerspectiveCamera(
-        VIEW_ANGLE,
-        ASPECT,
-        NEAR,
-        FAR
+      VIEW_ANGLE,
+      ASPECT,
+      NEAR,
+      FAR
     );
     camera.position.z = 100;
     const INIT_LIGHT_X = 0;
     const INIT_LIGHT_Y = 3;
     const INIT_LIGHT_Z = 2;
     var LightVec = new THREE.Vector3(INIT_LIGHT_X, INIT_LIGHT_Y, INIT_LIGHT_Z);
-    var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
+
+    var directionalLight = new THREE.SpotLight(0xFFFFFF);
     directionalLight.position.set(LightVec.x, LightVec.y, LightVec.z);
     directionalLight.castShadow = true;
-    directionalLight.shadowDarkness = 0.5;
     scene.add(directionalLight);
 
     var renderer = new THREE.WebGLRenderer();
 		renderer.setSize(WIDTH, HEIGHT);
-    renderer.setClearColor(0xffffff, 1);
-    renderer.shadowMapEnabled = true;
+    renderer.setClearColor(0x7ec0ee, 1);
+    renderer.shadowMap.enabled = true;
     document.body.appendChild(renderer.domElement);
 		var objArray = [];
     // end setup
@@ -166,15 +160,20 @@
     const PLANE_Y = -100;
     const PLANE_Z = -FAR / 2;
 		var geometry = new THREE.PlaneGeometry(FAR, FAR, 32);
+    var loader = new THREE.TextureLoader();
+    var groundTexture = loader.load('textures/grasslight-big.jpg');
+    groundTexture.wrapS = groundTexture.wrapT = THREE.RepeatWrapping;
+    groundTexture.repeat.set(25, 25);
+    groundTexture.anisotropy = 16;
     var material = new THREE.MeshBasicMaterial({
- 			color: 0xffff00,
- 			side: THREE.DoubleSide
+ 			color: 0xffffff,
+      map: groundTexture
  		});
     var plane = new THREE.Mesh(geometry, material);
-    plane.receiveShadow = false;
+    plane.receiveShadow = true;
     plane.position.y = PLANE_Y;
     plane.position.z = PLANE_Z;
-    plane.rotation.x = PLANE_X;
+    plane.rotation.x = - Math.PI / 2;
     scene.add(plane);
     // Sun
     var sunGeometry = new THREE.SphereGeometry(20, 16, 16);
@@ -232,7 +231,7 @@
 		var time = 0;
     function sphereGenerator() {
 			++time;
-      if (time % 100 === 1) {
+      if (time % 200 === 1) {
 				var sphereOrigin = {
 					x: Math.random() * 600 - 300,
 					y: 0,
