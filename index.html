@@ -110,7 +110,7 @@
     // end setup
 
     // sphere
-    const RADIUS = 15;
+    const RADIUS = 40;
     const SEGMENTS = 50;
     const RINGS = 50;
 		function createSphere(x, y, z) {
@@ -166,8 +166,7 @@
     groundTexture.repeat.set(25, 25);
     groundTexture.anisotropy = 16;
     var material = new THREE.MeshBasicMaterial({
- 			color: 0xffffff,
-      map: groundTexture
+ 			color: 0xffff00
  		});
     var plane = new THREE.Mesh(geometry, material);
     plane.receiveShadow = true;
@@ -209,7 +208,7 @@
 				obj.material.uniforms.time.value += 1;
         obj.material.uniforms.lightPos.value = LightVec;
         var time = obj.material.uniforms.time.value;
-				obj.position.y = 0.5 * GRAVITY * time * time + VY0 * time + Y0
+				/*obj.position.y = 0.5 * GRAVITY * time * time + VY0 * time + Y0
 				// calculate rotation
 				var angle =
 					Math.atan((obj.position.x) / (obj.position.z));
@@ -220,7 +219,7 @@
 				//obj.rotation.y += 0.1;
 				if (obj.position.y < PLANE_Y + RADIUS) {
 					indexesToRemove.push(objArray.indexOf(obj));
-				}
+				}*/
 			}
 			for (let index of indexesToRemove) {
 				scene.remove(objArray[index]);
@@ -231,10 +230,10 @@
 		var time = 0;
     function sphereGenerator() {
 			++time;
-      if (time % 200 === 1) {
+      if (time % 400 === 1) {
 				var sphereOrigin = {
-					x: Math.random() * 600 - 300,
-					y: 0,
+					x: -410+time/2,
+					y: 30,
 					z: -500
 				}
         var newSphere = createSphere(sphereOrigin.x, sphereOrigin.y, sphereOrigin.z);
