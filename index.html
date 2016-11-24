@@ -44,8 +44,8 @@
       light = normalize(light);
       float dProd = max(0.0, dot(vNormal, light));
 //      gl_FragColor = vec4(0.0,0.0,dProd,1.0);
+      gl_FragColor = texture2D(texture, vUv)+vec4(0.3,0.3,0.3,1.0)+vec4(0,0,dProd/1.5,1.0);
 
-      gl_FragColor = texture2D(texture, vUv);
     }
     </script>
 
@@ -130,7 +130,7 @@
 			sphere.position.x = x;
 			sphere.position.y = y;
 			sphere.position.z = z;
-
+      sphere.letter = char;
 			return sphere;
 		}
 
@@ -139,9 +139,10 @@
     const PLANE_Y = -100;
     const PLANE_Z = -FAR / 2;
 		var geometry = new THREE.PlaneGeometry(FAR, FAR, 32);
-		var material = new THREE.MeshLambertMaterial({
-  color: 0xFF0000
-});
+    var material = new THREE.MeshBasicMaterial({
+			color: 0xffff00,
+			side: THREE.DoubleSide
+		});
     var plane = new THREE.Mesh(geometry, material);
     plane.position.y = PLANE_Y;
     plane.position.z = PLANE_Z;
@@ -154,8 +155,8 @@
     })
     var sun = new THREE.Mesh(sunGeometry, sunmaterial );
     sun.position.x = LightVec.x;
-    sun.position.y = 210;
-    sun.position.z = -500;
+    sun.position.y = 250;
+    sun.position.z = -600;
     scene.add(sun);
     // loop
     var i = 1;
@@ -202,7 +203,7 @@
 		var time = 0;
     var sphereGenerator = function () {
 			++time;
-      if (time % 10 === 1) {
+      if (time % 100 === 1) {
 				var sphereOrigin = {
 					x: Math.random() * 600 - 300,
 					y: 0,
@@ -215,9 +216,25 @@
       }
     }
     var sunUpdate = function() {
-      sun.position.x = LightVec.x*50;
+      sun.position.x = LightVec.x*80;
     }
 		requestAnimFrame(render);
+    document.onkeypress = displayunicode;
+    function displayunicode(event){
+      var indexesToRemove = [];
+        var charCode = (typeof event.which == "number") ? event.which : event.keyCode
+        var char = String.fromCharCode(charCode).toUpperCase();
+        for (let obj of objArray) {
+          if (obj.letter == char) {
+            indexesToRemove.push(objArray.indexOf(obj));
+          }
+        }
+        for (let index of indexesToRemove) {
+          scene.remove(objArray[index]);
+          objArray.splice(index, 1);
+        }
+    }
+
     </script>
   </body>
 </html>
