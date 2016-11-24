@@ -84,7 +84,10 @@
         NEAR,
         FAR
     );
-    var LightVec = new THREE.Vector3(-10, 5, 2);
+    const INIT_LIGHT_X = 0;
+    const INIT_LIGHT_Y = 3;
+    const INIT_LIGHT_Z = 2;
+    var LightVec = new THREE.Vector3(INIT_LIGHT_X, INIT_LIGHT_Y, INIT_LIGHT_Z);
     var renderer = new THREE.WebGLRenderer();
 		renderer.setSize(WIDTH, HEIGHT);
     renderer.setClearColor(0xffffff, 1);
@@ -138,9 +141,6 @@
     plane.position.z = PLANE_Z;
     plane.rotation.x = PLANE_X;
     scene.add(plane);
-    var pointLight = new THREE.PointLight( 0xff0000, 1, 100 );
-    pointLight.position.set(LightVec.x,LightVec.y,LightVec.z);
-    scene.add( pointLight );
 
     // loop
     var i = 1;
@@ -150,27 +150,32 @@
       renderer.render(scene, camera);
 			requestAnimFrame(render);
     };
+
+    const GRAVITY = -0.044;
+    const VY0 = 2.5;
+    const Y0 = 10;
+    const VX0 = 4;
+    var lightTime = 0;
     function objUpdate() {
+      ++lightTime;
 			var indexesToRemove = [];
-      LightVec.x += 1;
-      pointLight.position.set(LightVec.x,LightVec.y,LightVec.z);
+      LightVec.x = 4 * Math.sin(2 * Math.PI * lightTime / 20) ;
 			for (let obj of objArray) {
 				obj.material.uniforms.time.value += 1;
         obj.material.uniforms.lightPos.value = LightVec;
         var time = obj.material.uniforms.time.value;
-				//obj.position.y -= 0.1;
-				/*obj.position.y = 0.5 * -0.04 * time * time + 1 * time + 10
+				obj.position.y = 0.5 * GRAVITY * time * time + VY0 * time + Y0
 				// calculate rotation
 				var angle =
 					Math.atan((obj.position.x) / (obj.position.z));
 				obj.rotation.y = angle;
-				obj.position.z += 2 * Math.cos(angle);
-				obj.position.x += 2 * Math.sin(angle);
+				obj.position.z += VX0 * Math.cos(angle);
+				obj.position.x += VX0 * Math.sin(angle);
 				//obj.position.z = -10 + 0.05 * time;
 				//obj.rotation.y += 0.1;
 				if (obj.position.y < PLANE_Y + RADIUS) {
 					indexesToRemove.push(objArray.indexOf(obj));
-				}*/
+				}
 			}
 			for (let index of indexesToRemove) {
 				scene.remove(objArray[index]);
@@ -183,7 +188,7 @@
 			++time;
       if (time % 100 === 1) {
 				var sphereOrigin = {
-					x: 100,
+					x: Math.random() * 700 - 350,
 					y: 0,
 					z: -500
 				}
