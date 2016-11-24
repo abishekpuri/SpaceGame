@@ -101,11 +101,11 @@
     scene.add(pointLight);
 
     // sphere
+    const RADIUS = 10;
+    const SEGMENTS = 16;
+    const RINGS = 16;
 		function createSphere(x, y, z) {
       // Set up the sphere vars
-      const RADIUS = 20;
-      const SEGMENTS = 16;
-      const RINGS = 16;
 
 			const sphereUniforms = {
 				// stores how much time has passed since creation
@@ -129,24 +129,68 @@
 		}
 
 		// plane
-		var geometry = new THREE.PlaneGeometry(10000, 10000, 32);
+		const PLANE_X = 2 * Math.PI / 4;
+    const PLANE_Y = -100;
+    const PLANE_Z = -FAR / 2;
+		var geometry = new THREE.PlaneGeometry(FAR, FAR, 32);
 		var material = new THREE.MeshBasicMaterial({
 			color: 0xffff00,
 			side: THREE.DoubleSide
 		});
     var plane = new THREE.Mesh(geometry, material);
-    plane.position.y = -100;
-    plane.position.z = -5000;
-    plane.rotation.x = 2 * Math.PI / 4;
+    plane.position.y = PLANE_Y;
+    plane.position.z = PLANE_Z;
+    plane.rotation.x = PLANE_X;
     scene.add(plane);
 
-    scene.add(createSphere(100,0,-500));
-
+    // loop
+    var i = 1;
     function render() {
+      objUpdate();
+      sphereGenerator();
       renderer.render(scene, camera);
 			requestAnimFrame(render);
     };
-
+    function objUpdate() {
+			var indexesToRemove = [];
+			for (let obj of objArray) {
+				obj.material.uniforms.time.value += 1;
+				var time = obj.material.uniforms.time.value;
+				//obj.position.y -= 0.1;
+				obj.position.y = 0.5 * -0.04 * time * time + 1 * time + 10
+				// calculate rotation
+				var angle =
+					Math.atan((obj.position.x) / (obj.position.z));
+				obj.rotation.y = angle;
+				obj.position.z += 2 * Math.cos(angle);
+				obj.position.x += 2 * Math.sin(angle);
+				//obj.position.z = -10 + 0.05 * time;
+				//obj.rotation.y += 0.1;
+				if (obj.position.y < PLANE_Y + RADIUS) {
+					indexesToRemove.push(objArray.indexOf(obj));
+				}
+			}
+			for (let index of indexesToRemove) {
+				scene.remove(objArray[index]);
+				objArray.splice(index, 1);
+			}
+      i+= 0.005;
+    }
+		var time = 0;
+    var sphereGenerator = function () {
+			++time;
+      if (time % 500 === 1) {
+				var sphereOrigin = {
+					x: 100,
+					y: 0,
+					z: -500
+				}
+        var newSphere = createSphere(sphereOrigin.x, sphereOrigin.y, sphereOrigin.z);
+				newSphere.origin = sphereOrigin;
+        scene.add(newSphere);
+				objArray.push(newSphere);
+      }
+    }
 		requestAnimFrame(render);
     </script>
   </body>
