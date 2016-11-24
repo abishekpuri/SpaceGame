@@ -24,30 +24,17 @@
     </script>
 
     <script type="x-shader/x-fragment" id="fragmentshader">
-      #ifdef GL_ES
-      precision highp float;
-      #endif
-			varying vec3 vNormal;
-
-      void main() {
-        // calc the dot product and clamp
-        // 0 -> 1 rather than -1 -> 1
-        vec3 light = vec3(0.5, 0.2, 1.0);
-
-        // ensure it's normalized
-        light = normalize(light);
-
-        // calculate the dot product of
-        // the light to the vertex normal
-        float dProd = max(0.0,
-                          dot(vNormal, light));
-
-        // feed into our frag colour
-        gl_FragColor = vec4(dProd, // R
-                            dProd, // G
-                            dProd, // B
-                            1.0);  // A
-      }
+    #ifdef GL_ES
+    precision highp float;
+    #endif
+    varying vec3 vNormal;
+    uniform vec3 lightPos;
+    void main() {
+      vec3 light = lightPos;
+      light = normalize(light);
+      float dProd = max(0.0, dot(vNormal, light));
+      gl_FragColor = vec4(0.0,0.0,dProd,1.0);
+    }
     </script>
 
     <script>
@@ -82,23 +69,13 @@
         NEAR,
         FAR
     );
-    var clock = new THREE.Clock();
+    var LightVec = new THREE.Vector3(-10, 5, 2);
     var renderer = new THREE.WebGLRenderer();
 		renderer.setSize(WIDTH, HEIGHT);
     renderer.setClearColor(0xffffff, 1);
     document.body.appendChild(renderer.domElement);
 		var objArray = [];
     // end setup
-
-    // create a point light
-    const pointLight =
-      new THREE.PointLight(0xFFFFFF);
-
-    // set its position
-    pointLight.position.x = 10;
-    pointLight.position.y = 50;
-    pointLight.position.z = 130;
-    scene.add(pointLight);
 
     // sphere
     const RADIUS = 10;
@@ -107,12 +84,16 @@
 		function createSphere(x, y, z) {
       // Set up the sphere vars
 
-			const sphereUniforms = {
+      const sphereUniforms = {
 				// stores how much time has passed since creation
 				time: {
 					type: 'f',
 					value: 0
-				}
+				},
+        lightPos: {
+          type: 'v3',
+          value: LightVec
+        }
 			}
 			const material = new THREE.ShaderMaterial({
 				uniforms: sphereUniforms,
@@ -142,6 +123,9 @@
     plane.position.z = PLANE_Z;
     plane.rotation.x = PLANE_X;
     scene.add(plane);
+    var pointLight = new THREE.PointLight( 0xff0000, 1, 100 );
+    pointLight.position.set(LightVec.x,LightVec.y,LightVec.z);
+    scene.add( pointLight );
 
     // loop
     var i = 1;
@@ -153,9 +137,12 @@
     };
     function objUpdate() {
 			var indexesToRemove = [];
+      LightVec.x += 0.1;
+      pointLight.position.set(LightVec.x,LightVec.y,LightVec.z);
 			for (let obj of objArray) {
 				obj.material.uniforms.time.value += 1;
-				var time = obj.material.uniforms.time.value;
+        obj.material.uniforms.lightPos.value = LightVec;
+        var time = obj.material.uniforms.time.value;
 				//obj.position.y -= 0.1;
 				obj.position.y = 0.5 * -0.04 * time * time + 1 * time + 10
 				// calculate rotation
@@ -179,7 +166,7 @@
 		var time = 0;
     var sphereGenerator = function () {
 			++time;
-      if (time % 500 === 1) {
+      if (time % 100 === 1) {
 				var sphereOrigin = {
 					x: 100,
 					y: 0,
