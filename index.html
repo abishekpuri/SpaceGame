@@ -1,0 +1,197 @@
+<html>
+  <head>
+    <title>My first Three.js app</title>
+    <style>
+      body { margin: 0; }
+      canvas { width: 100%; height: 100% }
+    </style>
+  </head>
+  <body>
+    <script src="libraries/three.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
+    <script type="x-shader/x-vertex" id="vertexshader">
+      // switch on high precision floats
+      #ifdef GL_ES
+      precision highp float;
+      #endif
+
+			varying vec3 vNormal;
+			uniform float time;
+      void main() {
+        vNormal = normal;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    </script>
+
+    <script type="x-shader/x-fragment" id="fragmentshader">
+      #ifdef GL_ES
+      precision highp float;
+      #endif
+			varying vec3 vNormal;
+
+      void main() {
+        // calc the dot product and clamp
+        // 0 -> 1 rather than -1 -> 1
+        vec3 light = vec3(0.5, 0.2, 1.0);
+
+        // ensure it's normalized
+        light = normalize(light);
+
+        // calculate the dot product of
+        // the light to the vertex normal
+        float dProd = max(0.0,
+                          dot(vNormal, light));
+
+        // feed into our frag colour
+        gl_FragColor = vec4(dProd, // R
+                            dProd, // G
+                            dProd, // B
+                            1.0);  // A
+      }
+    </script>
+
+    <script>
+		'use strict';
+    // start setup
+
+		window.requestAnimFrame = (function(){
+	      return  window.requestAnimationFrame       ||
+	              window.webkitRequestAnimationFrame ||
+	              window.mozRequestAnimationFrame    ||
+	              window.oRequestAnimationFrame      ||
+	              window.msRequestAnimationFrame     ||
+	              function(/* function */ callback, /* DOMElement */ element){
+	                window.setTimeout(callback, 1000 / 60);
+	              };
+	  	})();
+
+    // Set the scene size.
+    const WIDTH = window.innerWidth;
+    const HEIGHT = window.innerHeight;
+
+    // Set some camera attributes.
+    const VIEW_ANGLE = 45;
+    const ASPECT = WIDTH / HEIGHT;
+    const NEAR = 0.1;
+    const FAR = 10000;
+
+    var scene = new THREE.Scene();
+    var camera = new THREE.PerspectiveCamera(
+        VIEW_ANGLE,
+        ASPECT,
+        NEAR,
+        FAR
+    );
+    var clock = new THREE.Clock();
+    var renderer = new THREE.WebGLRenderer();
+		renderer.setSize(WIDTH, HEIGHT);
+    renderer.setClearColor(0xffffff, 1);
+    document.body.appendChild(renderer.domElement);
+		var objArray = [];
+    // end setup
+
+    // create a point light
+    const pointLight =
+      new THREE.PointLight(0xFFFFFF);
+
+    // set its position
+    pointLight.position.x = 10;
+    pointLight.position.y = 50;
+    pointLight.position.z = 130;
+    scene.add(pointLight);
+
+    // sphere
+    const RADIUS = 10;
+    const SEGMENTS = 16;
+    const RINGS = 16;
+		function createSphere(x, y, z) {
+      // Set up the sphere vars
+
+			const sphereUniforms = {
+				// stores how much time has passed since creation
+				time: {
+					type: 'f',
+					value: 0
+				}
+			}
+			const material = new THREE.ShaderMaterial({
+				uniforms: sphereUniforms,
+				vertexShader: $('#vertexshader').text(),
+				fragmentShader: $('#fragmentshader').text()
+			});
+			const sphereGeometry = new THREE.SphereGeometry(RADIUS, SEGMENTS, RINGS);
+			const sphere = new THREE.Mesh(sphereGeometry, material);
+			sphere.position.x = x;
+			sphere.position.y = y;
+			sphere.position.z = z;
+
+			return sphere;
+		}
+
+		// plane
+		const PLANE_X = 2 * Math.PI / 4;
+    const PLANE_Y = -100;
+    const PLANE_Z = -FAR / 2;
+		var geometry = new THREE.PlaneGeometry(FAR, FAR, 32);
+		var material = new THREE.MeshBasicMaterial({
+			color: 0xffff00,
+			side: THREE.DoubleSide
+		});
+    var plane = new THREE.Mesh(geometry, material);
+    plane.position.y = PLANE_Y;
+    plane.position.z = PLANE_Z;
+    plane.rotation.x = PLANE_X;
+    scene.add(plane);
+
+    // loop
+    var i = 1;
+    function render() {
+      objUpdate();
+      sphereGenerator();
+      renderer.render(scene, camera);
+			requestAnimFrame(render);
+    };
+    function objUpdate() {
+			var indexesToRemove = [];
+			for (let obj of objArray) {
+				obj.material.uniforms.time.value += 1;
+				var time = obj.material.uniforms.time.value;
+				//obj.position.y -= 0.1;
+				obj.position.y = 0.5 * -0.04 * time * time + 1 * time + 10
+				// calculate rotation
+				var angle =
+					Math.atan((obj.position.x) / (obj.position.z));
+				obj.rotation.y = angle;
+				obj.position.z += 2 * Math.cos(angle);
+				obj.position.x += 2 * Math.sin(angle);
+				//obj.position.z = -10 + 0.05 * time;
+				//obj.rotation.y += 0.1;
+				if (obj.position.y < PLANE_Y + RADIUS) {
+					indexesToRemove.push(objArray.indexOf(obj));
+				}
+			}
+			for (let index of indexesToRemove) {
+				scene.remove(objArray[index]);
+				objArray.splice(index, 1);
+			}
+      i+= 0.005;
+    }
+		var time = 0;
+    var sphereGenerator = function () {
+			++time;
+      if (time % 500 === 1) {
+				var sphereOrigin = {
+					x: 100,
+					y: 0,
+					z: -500
+				}
+        var newSphere = createSphere(sphereOrigin.x, sphereOrigin.y, sphereOrigin.z);
+				newSphere.origin = sphereOrigin;
+        scene.add(newSphere);
+				objArray.push(newSphere);
+      }
+    }
+		requestAnimFrame(render);
+    </script>
+  </body>
+</html>
