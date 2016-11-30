@@ -1,0 +1,303 @@
+<html>
+  <head>
+    <title>Space Game!</title>
+    <style>
+      body { margin: 0; }
+      canvas { width: 100%; height: 100% }
+    </style>
+  </head>
+  <body>
+    <script src="libraries/three.min.js"></script>
+    <script src="libraries/threex.dynamictexture.js"></script>
+    <script src="libraries/threex.terrain.js"></script>
+    <script src="libraries/threex.grass.js"></script>
+    <script src="libraries/SimplexNoise.js"></script>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
+    <script type="x-shader/x-vertex" id="vertexshader">
+      // switch on high precision floats
+      #ifdef GL_ES
+      precision highp float;
+      #endif
+      varying vec4 vVector;
+      varying vec3 vNormal;
+      uniform float time;
+      varying vec2 vUv;
+
+      void main() {
+        vNormal = normal;
+        //vVector = vec3(position);
+        vUv = uv;
+        vVector = modelViewMatrix * vec4(position,1.0);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    </script>
+
+    <script type="x-shader/x-fragment" id="fragmentshader">
+    #ifdef GL_ES
+    precision highp float;
+    #endif
+    varying vec4 vVector;
+    varying vec3 vNormal;
+    uniform vec3 lightPos;
+    uniform sampler2D texture;
+    varying vec2 vUv;
+    uniform vec4 specularity;
+    void main() {
+      //vec3 light = lightPos;
+      vec3 lightDir = normalize(lightPos);
+      vec4 eyeVecNormal = normalize(vVector);
+      vec3 reflectVec = normalize(reflect(-lightDir, vNormal));
+      vec4 ambient = vec4(0.4,0.0,0.0,1.0);
+      vec4 diffuse = vec4(0.4,0.2,0.2,1.0) * max(dot(vNormal,lightDir),0.0);
+      vec4 specular = specularity * pow(max(dot(vec4(reflectVec,1.0), eyeVecNormal), 0.0), 16.0);
+      gl_FragColor = texture2D(texture, vUv) + ambient + diffuse + specular;
+ /*
+      vec3 light = lightPos;
+      light = normalize(light);
+      float dProd = max(0.0, dot(vNormal, light));
+//      gl_FragColor = vec4(0.0,0.0,dProd,1.0);
+      gl_FragColor = texture2D(texture, vUv)+vec4(0.0,0.0,0.0,1.0)+vec4(dProd/1.5,0.0,0.0,1.0);*/
+
+    }
+    </script>
+
+    <script>
+    'use strict';
+    // start setup
+
+    window.requestAnimFrame = (function(){
+        return  window.requestAnimationFrame       ||
+                window.webkitRequestAnimationFrame ||
+                window.mozRequestAnimationFrame    ||
+                window.oRequestAnimationFrame      ||
+                window.msRequestAnimationFrame     ||
+                function(/* function */ callback, /* DOMElement */ element){
+                  window.setTimeout(callback, 1000 / 60);
+                };
+      })();
+
+    // Set the scene size.
+    const WIDTH = window.innerWidth;
+    const HEIGHT = window.innerHeight;
+
+    // Set some camera attributes.
+    const VIEW_ANGLE = 45;
+    const ASPECT = WIDTH / HEIGHT;
+    const NEAR = 0.1;
+    const FAR = 10000;
+
+    var scene = new THREE.Scene({ antialias: true });
+    var camera = new THREE.PerspectiveCamera(
+      VIEW_ANGLE,
+      ASPECT,
+      NEAR,
+      FAR
+    );
+    camera.position.z = 100;
+    const INIT_LIGHT_X = 0;
+    const INIT_LIGHT_Y = 80;
+    const INIT_LIGHT_Z = 2;
+    var LightVec = new THREE.Vector3(INIT_LIGHT_X, INIT_LIGHT_Y, INIT_LIGHT_Z);
+
+    var renderer = new THREE.WebGLRenderer();
+    renderer.setSize(WIDTH, HEIGHT);
+    renderer.setClearColor(0x7ec0ee, 1);
+    renderer.shadowMap.enabled = true;
+    document.body.appendChild(renderer.domElement);
+    var objArray = [];
+    // end setup
+
+    // sphere
+    const RADIUS = 15;
+    const SEGMENTS = 50;
+    const RINGS = 50;
+    function createSphere(x, y, z) {
+      // Set up the sphere vars
+      const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      var char = charset.charAt(Math.floor(Math.random() * charset.length));
+      var dynamicTexture  = new THREEx.DynamicTexture(512,512);
+      dynamicTexture.context.font  = "bolder 90px Verdana";
+      dynamicTexture.texture.anisotropy = renderer.getMaxAnisotropy();
+      dynamicTexture.drawText(char, 100, 256, 'white');
+      const sphereUniforms = {
+				// stores how much time has passed since creation
+				time: {
+					type: 'f',
+					value: 0
+				},
+        lightPos: {
+          type: 'v3',
+          value: LightVec
+        },
+        specularity: {
+          tyle: 'v4',
+          value: new THREE.Vector4(Math.random()*0.5,0.2,0.2,1.0)
+        },
+        texture: {
+          type: 't',
+          value: dynamicTexture.texture
+        }
+			}
+			const material = new THREE.ShaderMaterial({
+				uniforms: sphereUniforms,
+				vertexShader: $('#vertexshader').text(),
+				fragmentShader: $('#fragmentshader').text()
+			});
+      const sphereGeometry = new THREE.SphereGeometry(RADIUS, SEGMENTS, RINGS);
+      const sphere = new THREE.Mesh(sphereGeometry, material);
+      sphere.castShadow = true;
+      sphere.position.x = x;
+      sphere.position.y = y;
+      sphere.position.z = z;
+      sphere.letter = char;
+      return sphere;
+    }
+
+    // plane
+    // terrain
+    const PLANE_X = 2 * Math.PI / 4;
+    const PLANE_Y = -100;
+    const PLANE_Z = -FAR / 2;
+
+    var grassTufts	= 5000
+    var positions	= new Array(grassTufts)
+    for(var i = 0; i < grassTufts; i++){
+      var position	= new THREE.Vector3();
+      position.x	= (Math.random() - 0.5) * 10000;
+      position.z	= -(Math.random() - 0.5) * 10000;
+      position.y = -10;
+      positions[i]	= position;
+    }
+    console.log(positions);
+    var grassMesh	= THREEx.createGrassTufts(positions);
+	  scene.add(grassMesh)
+    var textureUrl = 'textures/grass01.png';
+    var material = grassMesh.material;
+  	material.map = THREE.ImageUtils.loadTexture(textureUrl);
+  	material.alphaTest = 0.7;
+
+    var geometry = new THREE.PlaneGeometry(FAR, FAR, 32);
+    var texture = THREE.ImageUtils.loadTexture('textures/grasslight-big.jpg')
+    texture.wrapS	= THREE.RepeatWrapping;
+  	texture.wrapT	= THREE.RepeatWrapping;
+  	texture.repeat.x = 10;
+  	texture.repeat.y = 10;
+  	texture.anisotropy = renderer.getMaxAnisotropy();
+    var material = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      map: texture
+    });
+    var plane = new THREE.Mesh(geometry, material);
+    plane.receiveShadow = true;
+    plane.position.y = PLANE_Y;
+    plane.position.z = PLANE_Z;
+    plane.rotation.x = - Math.PI / 2;
+    scene.add(plane);
+    // Sun
+    var sunGeometry = new THREE.SphereGeometry(20, 16, 16);
+    var sunmaterial = new THREE.MeshBasicMaterial({
+      color: 0xffff00
+    })
+    var sun = new THREE.Mesh(sunGeometry, sunmaterial );
+    sun.position.x = LightVec.x;
+    sun.position.y = 250;
+    sun.position.z = -600;
+    //scene.add(sun);
+    // loop
+    var i = 1;
+    function render() {
+      objUpdate();
+      sphereGenerator();
+      sunUpdate();
+      renderer.render(scene, camera);
+      requestAnimFrame(render);
+    };
+
+    const GRAVITY = -0.044;
+    const VY0 = 2.2;
+    const Y0 = 18;
+    const VX0 = 5.4;
+    var lightTime = 0;
+    function objUpdate() {
+      ++lightTime;
+      var indexesToRemove = [];
+      LightVec.x = 4 * Math.sin(2 * Math.PI * lightTime / 500);
+      for (let obj of objArray) {
+        obj.material.uniforms.time.value += 1;
+        obj.material.uniforms.lightPos.value = LightVec;
+        var time = obj.material.uniforms.time.value;
+        obj.position.y = 0.5 * GRAVITY * time * time + VY0 * time + Y0
+        // calculate rotation
+        var angle =
+          Math.atan((obj.position.x) / (obj.position.z));
+        obj.rotation.y = angle;
+        obj.position.z += VX0 * Math.cos(angle);
+        obj.position.x += VX0 * Math.sin(angle);
+        //obj.position.z = -10 + 0.05 * time;
+        //obj.rotation.y += 0.1;
+        if (obj.position.y < PLANE_Y + RADIUS) {
+          indexesToRemove.push(objArray.indexOf(obj));
+        }
+      }
+      for (let index of indexesToRemove) {
+        scene.remove(objArray[index]);
+        objArray.splice(index, 1);
+      }
+      i+= 0.005;
+    }
+    var time = 0;
+    function sphereGenerator() {
+      ++time;
+      if (time % 200 === 1) {
+        var sphereOrigin = {
+          x: Math.random() * 600 - 300,
+          y: 0,
+          z: -500
+        }
+        var newSphere = createSphere(sphereOrigin.x, sphereOrigin.y, sphereOrigin.z);
+        newSphere.origin = sphereOrigin;
+        scene.add(newSphere);
+        objArray.push(newSphere);
+      }
+    }
+    requestAnimFrame(render);
+    document.onkeypress = displayunicode;
+    function displayunicode(event){
+      var indexesToRemove = [];
+        var charCode = (typeof event.which == "number") ? event.which : event.keyCode
+        var char = String.fromCharCode(charCode).toUpperCase();
+        for (let obj of objArray) {
+          if (obj.letter == char) {
+            indexesToRemove.push(objArray.indexOf(obj));
+          }
+        }
+        for (let index of indexesToRemove) {
+          scene.remove(objArray[index]);
+          objArray.splice(index, 1);
+        }
+    }
+
+    function sunUpdate() {
+      sun.position.x = LightVec.x*80;
+    }
+    requestAnimFrame(render);
+
+    function generateTexture() {
+      var canvas = document.createElement( 'canvas' );
+      canvas.width = 512;
+      canvas.height = 512;
+      var context = canvas.getContext( '2d' );
+      for ( var i = 0; i < 20000; i ++ ) {
+        context.fillStyle = 'hsl(0,0%,' + ( Math.random() * 50 + 50 ) + '%)';
+        context.beginPath();
+        context.arc( Math.random() * canvas.width, Math.random() * canvas.height, Math.random() + 0.15, 0, Math.PI * 2, true );
+        context.fill();
+      }
+      context.globalAlpha = 0.075;
+      context.globalCompositeOperation = 'lighter';
+      return canvas;
+    }
+    </script>
+  </body>
+</html>
